@@ -17,6 +17,7 @@ import android.widget.Button;
 import android.widget.TextView;
 
 import com.adrian.phonebttest.ble.BLEUtil;
+import com.adrian.phonebttest.classic.ClassicBTUtil;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -50,6 +51,8 @@ public class MainActivity extends AppCompatActivity implements BLEUtil.IScanDevC
     private String[] permissions = new String[]{Manifest.permission.ACCESS_COARSE_LOCATION};
     private List<String> permissionList = new ArrayList<>();
 
+    private ClassicBTUtil classicBTUtil;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -60,6 +63,8 @@ public class MainActivity extends AppCompatActivity implements BLEUtil.IScanDevC
         bleUtil.setScanDevCallback(this);
         bleUtil.setCharUpdateCallback(this);
         bleUtil.setNotificationUUID(UUID_SERVICE, UUID_CHARACT);
+
+        classicBTUtil = new ClassicBTUtil(this);
     }
 
     private void requestPermission() {
@@ -151,6 +156,7 @@ public class MainActivity extends AppCompatActivity implements BLEUtil.IScanDevC
     @Override
     protected void onDestroy() {
         bleUtil.closeGatt();
+        classicBTUtil.destroy();
         super.onDestroy();
     }
 
@@ -187,7 +193,6 @@ public class MainActivity extends AppCompatActivity implements BLEUtil.IScanDevC
     @Override
     public void onConnectedDev(final BluetoothGatt gatt) {
         Log.e("TAG", "--------------------");
-//        bleUtil.setCharacteristicNotification(gatt, gatt.getService(UUID.fromString(UUID_SERVICE)).getCharacteristic(UUID.fromString(UUID_CHARACT)), true);
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
@@ -196,6 +201,8 @@ public class MainActivity extends AppCompatActivity implements BLEUtil.IScanDevC
                 curGatt = gatt;
             }
         });
+
+        classicBTUtil.autoConnect(curDev);
     }
 
     @Override
@@ -211,6 +218,7 @@ public class MainActivity extends AppCompatActivity implements BLEUtil.IScanDevC
                 curGatt = null;
             }
         });
+        classicBTUtil.disconnect();
     }
 
     @Override

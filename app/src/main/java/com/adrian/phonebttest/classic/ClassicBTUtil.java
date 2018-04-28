@@ -25,8 +25,8 @@ import java.util.UUID;
  * Created by qing on 2018/3/12 0012.
  */
 
-public class StandardBTUtil {
-    private static final String TEST_DEV_NAME = "I480";
+public class ClassicBTUtil {
+    private static final String TEST_DEV_MAC = "00:13:8A:20:00:43";
     private static final String SPP_UUID = "00000000-0000-1000-8000-00805f9b34fb";
     private Context context;
     private BluetoothAdapter btAdapt;
@@ -78,7 +78,7 @@ public class StandardBTUtil {
         }
     };
 
-    public StandardBTUtil(Context context) {
+    public ClassicBTUtil(Context context) {
         this.context = context;
 
         IntentFilter intent = new IntentFilter();
@@ -87,12 +87,19 @@ public class StandardBTUtil {
         intent.addAction(BluetoothAdapter.ACTION_SCAN_MODE_CHANGED);
         intent.addAction(BluetoothAdapter.ACTION_STATE_CHANGED);
         context.registerReceiver(searchDevices, intent);
+
+        enable();
     }
 
     public void destroy() {
         context.unregisterReceiver(searchDevices);
+        disconnect();
+    }
+
+    public void disconnect() {
         if (btSocket != null && btSocket.isConnected()) {
             try {
+                btAdapt.closeProfileProxy(BluetoothProfile.A2DP, a2dp);
                 btSocket.close();
             } catch (IOException e) {
                 e.printStackTrace();
@@ -116,7 +123,7 @@ public class StandardBTUtil {
     }
 
     public void stopSearch() {
-        if (btAdapt.isDiscovering()) {
+        if (btAdapt != null && btAdapt.isDiscovering()) {
             btAdapt.cancelDiscovery();
         }
     }
@@ -189,7 +196,8 @@ public class StandardBTUtil {
                             a2dp.getClass()
                                     .getMethod("connect", BluetoothDevice.class)
                                     .invoke(a2dp, btDev);
-                            Toast.makeText(context, "请播放音乐", Toast.LENGTH_SHORT).show();
+//                            Toast.makeText(context, "传统蓝牙已连接", Toast.LENGTH_SHORT).show();
+                            Log.e("CLASSIC", "传统蓝牙已连接");
                         }
                     }
                 } catch (Exception e) {
@@ -206,19 +214,20 @@ public class StandardBTUtil {
 
     public void autoConnect(BluetoothDevice btDev) {
         Log.e("BT_NAME", btDev.getName());
-        if (TextUtils.isEmpty(btDev.getName()) || !btDev.getName().contains(TEST_DEV_NAME)) {
-            Toast.makeText(context, "只能连接I480系列蓝牙", Toast.LENGTH_SHORT).show();
-            return;
-        }
-        stopSearch();
-        try {
-            if (btDev.getBondState() == BluetoothDevice.BOND_NONE) {
-                btDev.createBond();
-            }else if(btDev.getBondState() == BluetoothDevice.BOND_BONDED){
-                connect(btDev);
+        if (!TextUtils.isEmpty(btDev.getAddress()) && btDev.getAddress().equals(TEST_DEV_MAC)) {
+//            Toast.makeText(context, "准备连接传统蓝牙", Toast.LENGTH_SHORT).show();
+            Log.e("CLASSIC", "准备连接传统蓝牙");
+            stopSearch();
+            try {
+                if (btDev.getBondState() == BluetoothDevice.BOND_NONE) {
+                    btDev.createBond();
+                } else if (btDev.getBondState() == BluetoothDevice.BOND_BONDED) {
+                    connect(btDev);
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
             }
-        } catch (Exception e) {
-            e.printStackTrace();
+            return;
         }
     }
 
